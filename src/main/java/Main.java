@@ -72,8 +72,10 @@ public class Main {
         if (conn != null) {
             System.out.println("Connection successful!");
             // Your database operations here
-
             // SELECT * FROM Item
+            selectAllItems(conn);
+
+            
 
             // SELECT * FROM Category;
             // SELECT * FROM Item;
