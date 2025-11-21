@@ -6,8 +6,12 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.Types;
+import java.math.BigDecimal;
 import java.sql.Driver;
 import java.util.Enumeration;
+import java.util.Scanner;
 
 public class Main {
 
@@ -98,32 +102,51 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread(Main::cleanupJdbcDrivers));
         // Test the connection
         Connection conn = getConnection();
+        String options = "";
 
         if (conn != null) {
             System.out.println("Connection successful!");
-            // Your database operations here
-            // SELECT * FROM Item
-            selectAllItems(conn);
 
-            // SELECT * FROM Category
-            selectAllCategories(conn);
+            // Prompt for options
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Select an option: ");
+            System.out.println("1. View all items, categories, discounts, customers, orders, payments, and order lines");
+            System.out.println("2. Insert a new item");
+            System.out.println("3. Update an item");
+            System.out.println("4. Delete an item");
+            System.out.println("5. Search for items");
+            System.out.println("6. Exit");
+            options = scanner.nextLine();
 
-            // SELECT * FROM Discount
-            selectAllDiscounts(conn);
-
+            switch (options) {
+                case "1":
+                    promptSelectAll(conn, scanner);
+                    break;
+                case "2":
+                    // Insert a new item
+                    promptInsertItem(conn, scanner);
+                    break;
+                case "3":
+                    // Update an item
+                    System.out.println("Update not implemented yet.");
+                    break;
+                case "4":
+                    // Delete an item
+                    System.out.println("Delete not implemented yet.");
+                    break;
+                case "5":
+                    // Search for items
+                    System.out.println("Search not implemented yet.");
+                    break;
+                case "6":
+                    // Exit
+                    System.out.println("Goodbye!");
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
             
-            // SELECT * FROM Customer
-            selectAllCustomers(conn);
-
-            // SELECT * FROM Orders
-            selectAllOrders(conn);
-
-            // SELECT * FROM Payment
-            selectAllPayments(conn);
-
-            // SELECT * FROM OrderLine
-            selectAllOrderLines(conn);
-
+            scanner.close();
             closeConnection();
         } else {
             System.out.println("Failed to establish connection.");
@@ -278,6 +301,98 @@ public class Main {
             }
         } catch (SQLException e) {
             System.out.println("Error selecting order lines: " + e.getMessage());
+        }
+    }
+
+    public static void insertItem(Connection conn, String name, BigDecimal price, Integer categoryId, Integer discountId) {
+        final String sql = "INSERT INTO Item (Name, Price, CategoryID, DiscountID) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name);
+            ps.setBigDecimal(2, price);
+
+            if (categoryId != null) {
+                ps.setInt(3, categoryId);
+            } else {
+                ps.setNull(3, Types.INTEGER);
+            }
+
+            if (discountId != null) {
+                ps.setInt(4, discountId);
+            } else {
+                ps.setNull(4, Types.INTEGER);
+            }
+
+            int rows = ps.executeUpdate();
+            System.out.println("Inserted item '" + name + "' — rows affected: " + rows);
+
+        } catch (SQLException e) {
+            System.err.println("Error inserting item: " + e.getMessage());
+        }
+    }
+
+    public static void promptInsertItem(Connection conn, Scanner scanner) {
+        try {
+            System.out.print("Enter item name: ");
+            String name = scanner.nextLine().trim();
+
+            System.out.print("Enter item price: ");
+            String priceInput = scanner.nextLine().trim();
+            BigDecimal price = new BigDecimal(priceInput);
+
+            System.out.print("Enter category ID (optional, blank for null): ");
+            String catInput = scanner.nextLine().trim();
+            Integer categoryId = catInput.isEmpty() ? null : Integer.parseInt(catInput);
+
+            System.out.print("Enter discount ID (optional, blank for null): ");
+            String discInput = scanner.nextLine().trim();
+            Integer discountId = discInput.isEmpty() ? null : Integer.parseInt(discInput);
+
+            insertItem(conn, name, price, categoryId, discountId);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid number entered. Aborting insert.");
+        }
+    }
+
+    public static void promptSelectAll(Connection conn, Scanner scanner) {
+        System.out.println("Select one of the following to view all:");
+        System.out.println("1. Items");
+        System.out.println("2. Categories");
+        System.out.println("3. Discounts");
+        System.out.println("4. Customers");
+        System.out.println("5. Orders");
+        System.out.println("6. Payments");
+        System.out.println("7. Order Lines");
+        System.out.println("8. Exit");
+        System.out.print("Enter your choice: ");
+        String choice = scanner.nextLine();
+
+        switch (choice) {
+            case "1":
+                selectAllItems(conn);
+                break;
+            case "2":
+                selectAllCategories(conn);
+                break;
+            case "3":
+                selectAllDiscounts(conn);
+                break;
+            case "4":
+                selectAllCustomers(conn);
+                break;
+            case "5":
+                selectAllOrders(conn);
+                break;
+            case "6":
+                selectAllPayments(conn);
+                break;
+            case "7":
+                selectAllOrderLines(conn);
+                break;
+            case "8":
+                System.out.println("Goodbye!");
+                System.exit(0);
+            default:
+                System.out.println("Invalid choice.");
         }
     }
 }
