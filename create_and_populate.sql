@@ -263,3 +263,25 @@ alter table Payment drop foreign key Payment_ibfk_1;
 
 
 rename table `Order` to Orders;
+
+-- ===== Add CHECK constraint =====
+ALTER TABLE Item
+ADD CONSTRAINT CHK_PositivePrice
+CHECK (Price > 0);
+
+ALTER TABLE OrderLine
+ADD CONSTRAINT CHK_PositiveQuantity
+CHECK (Quantity > 0);
+
+ALTER TABLE Payment
+ADD CONSTRAINT CHK_PositiveAmount
+CHECK (Amount > 0);
+
+-- ===== Create INDEX =====
+CREATE INDEX idx_item_category ON Item (CategoryID);
+
+CREATE INDEX idx_order_customer ON Orders (CustomerID);
+
+CREATE INDEX idx_payment_order ON Payment (OrderID);
+
+CREATE INDEX idx_inventory_item ON InventoryEntry (ItemID);
