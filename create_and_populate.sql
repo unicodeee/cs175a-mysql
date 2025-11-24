@@ -280,8 +280,20 @@ CHECK (Amount > 0);
 -- ===== Create INDEX =====
 CREATE INDEX idx_item_category ON Item (CategoryID);
 
-CREATE INDEX idx_order_customer ON Orders (CustomerID);
-
 CREATE INDEX idx_payment_order ON Payment (OrderID);
 
 CREATE INDEX idx_inventory_item ON InventoryEntry (ItemID);
+
+-- ===== Create VIEW =====
+CREATE VIEW SalesSummary AS 
+SELECT
+   c.ID AS CustomerID,
+   CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+   COUNT(o.ID) AS OrderCount,
+   SUM(ol.Total) AS TotalSpent,
+   AVG(ol.Total) AS AverageOrderValue
+   FROM Customer c
+   LEFT JOIN Orders o ON c.ID = o.CustomerID
+   LEFT JOIN OrderLine ol ON o.ID = ol.OrderID
+   GROUP BY c.ID, c.FirstName, c.LastName
+   ORDER BY TotalSpent DESC;
