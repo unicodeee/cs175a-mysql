@@ -284,7 +284,8 @@ CREATE INDEX idx_payment_order ON Payment (OrderID);
 
 CREATE INDEX idx_inventory_item ON InventoryEntry (ItemID);
 
--- ===== Create VIEW =====
+-- ===== Create VIEW for Sales Summary =====
+DROP VIEW IF EXISTS SalesSummary;
 CREATE VIEW SalesSummary AS 
 SELECT
    c.ID AS CustomerID,
@@ -297,3 +298,97 @@ SELECT
    LEFT JOIN OrderLine ol ON o.ID = ol.OrderID
    GROUP BY c.ID, c.FirstName, c.LastName
    ORDER BY TotalSpent DESC;
+
+-- ===== Create Stored Procedure to update inventory when items are sold =====
+DROP PROCEDURE IF EXISTS UpdateInventoryOnSale;
+DELIMITER //
+CREATE PROCEDURE UpdateInventoryOnSale(
+   IN p_ItemID INT,
+   IN p_Quantity INT,
+   OUT p_Success BOOLEAN
+)
+BEGIN
+   DECLARE v_CurrentStock INT;
+
+   START TRANSACTION;
+
+   -- Check current stock
+   SELECT Quantity INTO v_CurrentStock
+   FROM InventoryEntry
+   WHERE ItemID = p_ItemID
+   ORDER BY StockDate DESC
+
+   -- Validate stock availability
+   IF v_CurrentStock IS NULL THEN
+      SET p_Success = FALSE;
+      ROLLBACK;
+   ELSEIF v_CurrentStock < p_Quantity THEN
+      SET p_Success = FALSE;
+      ROLLBACK;
+   ELSE
+      -- Update stock
+      UPDATE InventoryEntry
+      SET Quantity = Quantity - p_Quantity
+      WHERE ItemID = p_ItemID
+      ORDER BY StockDate DESC
+
+      COMMIT;
+      SET p_Success = TRUE;
+   END IF;
+END //
+DELIMITER ;
+
+-- ===== Test Stored Procedure =====
+SET @success = FALSE;
+CALL UpdateInventoryOnSale(1, 2, @success);
+SELECT @success AS ProcedureResult; -- Output: 1 for success, 0 for failure
+
+-- ===== Create Function to calculate discounted price =====
+DROP FUNCTION IF EXISTS CalculateDiscountedPrice;
+DELIMITER //
+CREATE FUNCTION CalculateDiscountedPrice(
+   p_ItemID INT,
+   p_Quantity INT
+) 
+RETURNS DECIMAL(10,2)
+READS SQL DATA      
+BEGIN
+   DECLARE v_BasePrice DECIMAL(10,2);
+   DECLARE v_DiscountType VARCHAR(50);
+   DECLARE v_DiscountVal DECIMAL(10,2);
+   DECLARE v_FinalPrice DECIMAL(10,2);
+   DECLARE v_PaidItems INT;
+
+   -- Get price and discount info
+   SELECT i.Price, 
+         d.discountType,
+         CASE
+            WHEN d.discountType IN ('Percentage', 'Fixed')
+               THEN CAST(REGEXP_SUBSTR(d.Description, '[0-9]+') AS DECIMAL(10,2)) 
+            ELSE NULL
+         END AS DiscVal
+   INTO v_BasePrice, v_DiscountType, v_DiscountVal
+   FROM Item i
+   LEFT JOIN Discount d ON d.ID = i.DiscountID
+   AND CURDATE() BETWEEN d.startDate AND d.endDate
+   WHERE i.ID = p_ItemID;
+
+   -- Apply discount rules
+   IF v_DiscountType = 'Percentage' THEN
+      SET v_FinalPrice = p_Quantity * v_BasePrice * (1 - v_DiscountVal / 100);
+   ELSEIF v_DiscountType = 'Fixed' THEN
+      SET v_FinalPrice = p_Quantity * v_BasePrice - v_DiscountVal;
+   ELSEIF v_DiscountType = 'BOGO' THEN
+      SET v_PaidItems = CEIL(p_Quantity / 2);
+      SET v_FinalPrice = v_PaidItems * v_BasePrice;
+   ELSE
+      SET v_FinalPrice = p_Quantity * v_BasePrice;
+   END IF;
+
+   RETURN ROUND(v_FinalPrice, 2);
+END //
+DELIMITER ;
+
+-- ===== Test Function =====
+SELECT CalculateDiscountedPrice(1, 2) AS DiscountedPrice;
+   
