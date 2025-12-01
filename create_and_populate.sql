@@ -310,29 +310,26 @@ CREATE PROCEDURE UpdateInventoryOnSale(
 BEGIN
    DECLARE v_CurrentStock INT;
 
-   START TRANSACTION;
-
    -- Check current stock
    SELECT Quantity INTO v_CurrentStock
    FROM InventoryEntry
    WHERE ItemID = p_ItemID
    ORDER BY StockDate DESC
+   LIMIT 1;
 
    -- Validate stock availability
    IF v_CurrentStock IS NULL THEN
       SET p_Success = FALSE;
-      ROLLBACK;
    ELSEIF v_CurrentStock < p_Quantity THEN
       SET p_Success = FALSE;
-      ROLLBACK;
    ELSE
       -- Update stock
       UPDATE InventoryEntry
       SET Quantity = Quantity - p_Quantity
       WHERE ItemID = p_ItemID
       ORDER BY StockDate DESC
+      LIMIT 1;
 
-      COMMIT;
       SET p_Success = TRUE;
    END IF;
 END //
