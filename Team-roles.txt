@@ -1,0 +1,34 @@
+Team E3 - Phase C Contributions
+
+Panchal, Harsh:
+- Database schema design and SQL implementation
+- Created stored procedures and functions
+- MySQL database setup and population scripts
+- View creation (SalesSummary)
+- Video demo preparation and recording
+
+Ramos, Jelinne Quelina:
+- Java JDBC application development
+- Console menu implementation with Scanner
+- PreparedStatement operations for CRUD
+- Input validation and error handling
+- Video demo preparation and recording
+
+Nguyen, Quoc Thang:
+- Database schema design and SQL implementation
+- Testing and quality assurance
+- Database connection management
+- Maven project configuration
+
+Nguyen, Pham:
+- Java JDBC application development
+- Console menu implementation with Scanner
+- Transactional workflow implementation
+- Performance optimization suggestions
+
+All members:
+- Collaborated on testing and debugging
+- Reviewed code for best practices
+- Contributed to AI collaboration log
+- Prepared for Phase C presentation demo
+- Documentation and README creation
