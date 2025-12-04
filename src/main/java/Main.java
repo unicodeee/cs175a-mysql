@@ -147,7 +147,7 @@ public class Main {
             FROM Item i
             LEFT JOIN Category c ON i.CategoryID = c.ID
             LEFT JOIN Discount d ON i.DiscountID = d.ID
-            ORDER BY c.Name, i.Name;
+            ORDER BY i.ID;
             """;
         
         try (PreparedStatement stmt = conn.prepareStatement(query);
