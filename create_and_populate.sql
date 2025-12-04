@@ -285,19 +285,28 @@ CREATE INDEX idx_payment_order ON Payment (OrderID);
 CREATE INDEX idx_inventory_item ON InventoryEntry (ItemID);
 
 -- ===== Create VIEW for Sales Summary =====
-DROP VIEW IF EXISTS SalesSummary;
-CREATE VIEW SalesSummary AS 
+CREATE OR REPLACE VIEW SalesSummary AS
 SELECT
-   c.ID AS CustomerID,
-   CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
-   COUNT(o.ID) AS OrderCount,
-   SUM(ol.Total) AS TotalSpent,
-   AVG(ol.Total) AS AverageOrderValue
-   FROM Customer c
-   LEFT JOIN Orders o ON c.ID = o.CustomerID
-   LEFT JOIN OrderLine ol ON o.ID = ol.OrderID
-   GROUP BY c.ID, c.FirstName, c.LastName
-   ORDER BY TotalSpent DESC;
+    c.ID AS CustomerID,
+    CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+
+    -- Count distinct orders
+    COUNT(DISTINCT o.ID) AS OrderCount,
+
+    -- Sum totals safely
+    SUM(ol.Total) AS TotalSpent,
+
+    -- Average order value = SUM(order totals) / COUNT(distinct orders)
+    CASE
+        WHEN COUNT(DISTINCT o.ID) = 0 THEN NULL
+        ELSE SUM(ol.Total) / COUNT(DISTINCT o.ID)
+        END AS AverageOrderValue
+
+FROM Customer c
+         LEFT JOIN Orders o ON c.ID = o.CustomerID
+         LEFT JOIN OrderLine ol ON o.ID = ol.OrderID
+GROUP BY c.ID, c.FirstName, c.LastName
+ORDER BY TotalSpent DESC;
 
 -- ===== Create Stored Procedure to update inventory when items are sold =====
 DROP PROCEDURE IF EXISTS UpdateInventoryOnSale;

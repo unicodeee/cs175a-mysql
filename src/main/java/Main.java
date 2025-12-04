@@ -520,6 +520,29 @@ public class Main {
         }
     }
 
+    public static void viewInventoryEntry(Connection conn) {
+        String query = "SELECT * FROM InventoryEntry;";
+        try (PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            System.out.println("\n--- Inventory Summary ---");
+            while (rs.next()) {
+//                System.out.printf("Customer:"TotalSpent")); %s | Orders: %d | Total Spent: %s%n",
+////                        rs.getString("CustomerName"),
+////                        rs.getInt("OrderCount"),
+////                        rs.getBigDecimal(
+
+                System.out.printf("ItemID: %s | Quantity: %d | StockDate: %s%n",
+                        rs.getInt("ItemID"),
+                        rs.getInt("Quantity"),
+                        rs.getDate("StockDate"));
+
+            }
+        } catch (SQLException e) {
+            System.out.println("Error viewing summary: " + e.getMessage());
+        }
+    }
+
     public static void handleViewMenu(Connection conn, Scanner scanner) {
         System.out.println("\n--- View Data ---");
         System.out.println("1. Items");
@@ -531,6 +554,8 @@ public class Main {
         System.out.println("7. Order Lines");
         System.out.println("8. Sales Summary (View)");
         System.out.println("9. Back");
+        System.out.println("10. Inventory");
+
         System.out.print("Enter choice: ");
         String choice = scanner.nextLine();
 
@@ -544,6 +569,7 @@ public class Main {
             case "7" -> selectAllOrderLines(conn);
             case "8" -> viewSalesSummary(conn);
             case "9" -> {}
+            case "10" -> viewInventoryEntry(conn);
             default -> System.out.println("Invalid choice.");
         }
     }
